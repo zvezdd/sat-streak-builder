@@ -3,6 +3,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { StreakCard } from '@/components/StreakCard';
 import { DailyChallenge } from '@/components/DailyChallenge';
+import { Friends } from '@/components/Friends';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, LogOut, Loader2 } from 'lucide-react';
@@ -103,14 +104,21 @@ const Index = () => {
             <span className="ml-2">Loading your progress...</span>
           </div>
         ) : (
-          <div className="space-y-8">
-            <StreakCard 
-              currentStreak={streakData.current_streak}
-              longestStreak={streakData.longest_streak}
-              dailyProgress={dailyProgress}
-            />
+          <div className="grid gap-6 lg:grid-cols-3">
+            {/* Left Column - Progress and Friends */}
+            <div className="space-y-6">
+              <StreakCard 
+                currentStreak={streakData.current_streak}
+                longestStreak={streakData.longest_streak}
+                dailyProgress={dailyProgress}
+              />
+              <Friends />
+            </div>
             
-            <DailyChallenge onProgressUpdate={loadUserData} />
+            {/* Right Column - Daily Challenge */}
+            <div className="lg:col-span-2">
+              <DailyChallenge onProgressUpdate={loadUserData} />
+            </div>
           </div>
         )}
       </main>
