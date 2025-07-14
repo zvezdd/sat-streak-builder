@@ -1,0 +1,245 @@
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { QuestionCard } from './QuestionCard';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, RotateCcw } from 'lucide-react';
+
+interface Question {
+  id: string;
+  subject: 'math' | 'english';
+  question_text: string;
+  options: Record<string, string>;
+  correct_answer: string;
+  explanation: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+}
+
+interface DailyChallengeProps {
+  onProgressUpdate: () => void;
+}
+
+export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<{questionId: string, answer: string, correct: boolean}[]>([]);
+  const [showResult, setShowResult] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [challengeComplete, setChallengeComplete] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const loadQuestions = async () => {
+    setLoading(true);
+    try {
+      // Get 5 random questions
+      const { data, error } = await supabase
+        .from('questions')
+        .select('*')
+        .order('RANDOM()')
+        .limit(5);
+
+      if (error) throw error;
+      setQuestions((data || []) as Question[]);
+    } catch (error) {
+      console.error('Error loading questions:', error);
+      toast({
+        title: "Error loading questions",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadQuestions();
+  }, []);
+
+  const handleAnswer = async (questionId: string, selectedAnswer: string, isCorrect: boolean) => {
+    const newAnswer = { questionId, answer: selectedAnswer, correct: isCorrect };
+    const updatedAnswers = [...answers, newAnswer];
+    setAnswers(updatedAnswers);
+    setShowResult(true);
+
+    // Update progress after showing result
+    setTimeout(async () => {
+      if (currentQuestionIndex < questions.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        setShowResult(false);
+      } else {
+        // Challenge complete - update database
+        setChallengeComplete(true);
+        await updateDailyProgress(updatedAnswers);
+      }
+    }, 2000);
+  };
+
+  const updateDailyProgress = async (finalAnswers: {questionId: string, answer: string, correct: boolean}[]) => {
+    if (!user) return;
+
+    const correctAnswers = finalAnswers.filter(a => a.correct).length;
+    const totalQuestions = finalAnswers.length;
+    const isCompleted = totalQuestions >= 5;
+
+    try {
+      // Update daily progress
+      const { error: progressError } = await supabase
+        .from('daily_progress')
+        .upsert({
+          user_id: user.id,
+          date: new Date().toISOString().split('T')[0],
+          questions_solved: totalQuestions,
+          questions_correct: correctAnswers,
+          completed: isCompleted,
+        });
+
+      if (progressError) throw progressError;
+
+      // Update streak if completed
+      if (isCompleted) {
+        const { data: streakData, error: streakFetchError } = await supabase
+          .from('streaks')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (streakFetchError) throw streakFetchError;
+
+        const today = new Date().toISOString().split('T')[0];
+        const lastCompleted = streakData.last_completed_date;
+        
+        let newCurrentStreak = 1;
+        if (lastCompleted) {
+          const lastDate = new Date(lastCompleted);
+          const todayDate = new Date(today);
+          const diffTime = todayDate.getTime() - lastDate.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          
+          if (diffDays === 1) {
+            newCurrentStreak = streakData.current_streak + 1;
+          }
+        }
+
+        const newLongestStreak = Math.max(newCurrentStreak, streakData.longest_streak);
+
+        const { error: streakUpdateError } = await supabase
+          .from('streaks')
+          .update({
+            current_streak: newCurrentStreak,
+            longest_streak: newLongestStreak,
+            last_completed_date: today,
+          })
+          .eq('user_id', user.id);
+
+        if (streakUpdateError) throw streakUpdateError;
+      }
+
+      onProgressUpdate();
+      
+      toast({
+        title: isCompleted ? "Daily Challenge Complete!" : "Progress Saved",
+        description: isCompleted 
+          ? `Great job! You got ${correctAnswers} out of ${totalQuestions} correct.`
+          : `Progress saved: ${correctAnswers}/${totalQuestions} correct`,
+      });
+
+    } catch (error) {
+      console.error('Error updating progress:', error);
+      toast({
+        title: "Error saving progress",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetChallenge = () => {
+    setCurrentQuestionIndex(0);
+    setAnswers([]);
+    setShowResult(false);
+    setChallengeComplete(false);
+    loadQuestions();
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading questions...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <p>No questions available. Please try again later.</p>
+          <Button onClick={loadQuestions} className="mt-4">
+            Retry
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (challengeComplete) {
+    const correctCount = answers.filter(a => a.correct).length;
+    const accuracy = Math.round((correctCount / answers.length) * 100);
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-center">Challenge Complete! 🎉</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center space-y-4">
+          <div className="text-6xl font-bold text-primary">{correctCount}/5</div>
+          <p className="text-lg">You got {correctCount} questions correct!</p>
+          <p className="text-muted-foreground">Accuracy: {accuracy}%</p>
+          
+          <div className="flex justify-center space-x-4 pt-4">
+            <Button onClick={resetChallenge} variant="outline">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const currentAnswer = answers.find(a => a.questionId === currentQuestion.id);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Daily Challenge</h2>
+        <div className="text-sm text-muted-foreground">
+          Question {currentQuestionIndex + 1} of {questions.length}
+        </div>
+      </div>
+      
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div 
+          className="bg-primary h-2 rounded-full transition-all duration-300" 
+          style={{ width: `${((currentQuestionIndex + (showResult ? 1 : 0)) / questions.length) * 100}%` }}
+        />
+      </div>
+
+      <QuestionCard
+        question={currentQuestion}
+        onAnswer={handleAnswer}
+        showResult={showResult}
+        selectedAnswer={currentAnswer?.answer}
+        isCorrect={currentAnswer?.correct}
+      />
+    </div>
+  );
+}
