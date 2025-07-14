@@ -34,15 +34,17 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
   const loadQuestions = async () => {
     setLoading(true);
     try {
-      // Get 5 random questions
+      // Get all questions and randomize on client side
       const { data, error } = await supabase
         .from('questions')
-        .select('*')
-        .order('RANDOM()')
-        .limit(5);
+        .select('*');
 
       if (error) throw error;
-      setQuestions((data || []) as Question[]);
+      
+      // Shuffle and take 5 random questions
+      const shuffled = (data || []).sort(() => 0.5 - Math.random());
+      const randomQuestions = shuffled.slice(0, 5);
+      setQuestions(randomQuestions as Question[]);
     } catch (error) {
       console.error('Error loading questions:', error);
       toast({
