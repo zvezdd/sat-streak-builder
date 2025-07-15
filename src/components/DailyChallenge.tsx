@@ -115,14 +115,24 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
         const lastCompleted = streakData.last_completed_date;
         
         let newCurrentStreak = 1;
+        
         if (lastCompleted) {
-          const lastDate = new Date(lastCompleted);
-          const todayDate = new Date(today);
+          // Don't update if already completed today
+          if (lastCompleted === today) {
+            return;
+          }
+          
+          const lastDate = new Date(lastCompleted + 'T00:00:00.000Z');
+          const todayDate = new Date(today + 'T00:00:00.000Z');
           const diffTime = todayDate.getTime() - lastDate.getTime();
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
           
           if (diffDays === 1) {
+            // Consecutive day - increment streak
             newCurrentStreak = streakData.current_streak + 1;
+          } else if (diffDays > 1) {
+            // Streak broken - reset to 1
+            newCurrentStreak = 1;
           }
         }
 
