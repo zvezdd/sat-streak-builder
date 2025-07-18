@@ -35,7 +35,37 @@ const Index = () => {
       if (streakError && streakError.code !== 'PGRST116') {
         console.error('Error loading streak:', streakError);
       } else if (streak) {
-        setStreakData(streak);
+        // Check if streak should be reset due to missed days
+        const today = new Date().toISOString().split('T')[0];
+        const lastCompleted = streak.last_completed_date;
+        
+        if (lastCompleted) {
+          const lastDate = new Date(lastCompleted + 'T00:00:00.000Z');
+          const todayDate = new Date(today + 'T00:00:00.000Z');
+          const diffTime = todayDate.getTime() - lastDate.getTime();
+          const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+          
+          // If more than 1 day has passed, reset the streak to 0
+          if (diffDays > 1) {
+            const { error: resetError } = await supabase
+              .from('streaks')
+              .update({
+                current_streak: 0,
+              })
+              .eq('user_id', user.id);
+            
+            if (!resetError) {
+              setStreakData({
+                ...streak,
+                current_streak: 0
+              });
+            }
+          } else {
+            setStreakData(streak);
+          }
+        } else {
+          setStreakData(streak);
+        }
       }
 
       // Load today's progress
