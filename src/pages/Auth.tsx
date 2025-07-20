@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export default function Auth() {
     e.preventDefault();
     setLoading(true);
     
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email, password, username);
     
     if (error) {
       toast({
@@ -197,6 +198,21 @@ export default function Auth() {
 
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="space-y-2">
+                      <Label htmlFor="signup-username">Username</Label>
+                      <Input
+                        id="signup-username"
+                        type="text"
+                        placeholder="Choose a unique username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                        minLength={3}
+                        maxLength={20}
+                        pattern="^[a-zA-Z0-9_]+$"
+                        title="Username can only contain letters, numbers and underscores"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="signup-email">Email</Label>
                       <Input
                         id="signup-email"
@@ -219,7 +235,7 @@ export default function Auth() {
                         minLength={6}
                       />
                     </div>
-                    <Button type="submit" className="w-full" disabled={loading}>
+                    <Button type="submit" className="w-full" disabled={loading || !username.trim()}>
                       {loading ? "Creating account..." : "Create Account"}
                     </Button>
                   </form>
