@@ -341,7 +341,7 @@ export function Friends() {
                       </div>
                     </div>
                     <Badge variant={friend.completed_today ? "default" : "secondary"}>
-                      {friend.completed_today ? "✓ Completed Today" : "Not Done Today"}
+                      {friend.completed_today ? "✓ Завершено сегодня" : "Не завершено сегодня"}
                     </Badge>
                   </div>
                 ))}
