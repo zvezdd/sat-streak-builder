@@ -336,8 +336,6 @@ export function Friends() {
                       <div>
                         <p className="font-medium">{friend.username}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{friend.longest_streak} {friend.longest_streak === 1 ? 'день' : 'дней'} лучший стрик</span>
-                          <span>•</span>
                           <span>{formatLastSeen(friend.last_seen)}</span>
                         </div>
                       </div>

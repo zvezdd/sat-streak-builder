@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Calendar, Camera, ArrowLeft } from 'lucide-react';
+import { User, Mail, Calendar, Camera, ArrowLeft, Trophy, Flame } from 'lucide-react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 interface Profile {
@@ -17,12 +17,19 @@ interface Profile {
   updated_at: string;
 }
 
+interface Streak {
+  current_streak: number;
+  longest_streak: number;
+  last_completed_date: string | null;
+}
+
 export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { userId } = useParams();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,6 +41,7 @@ export default function Profile() {
   useEffect(() => {
     if (user && profileUserId) {
       loadProfile();
+      loadStreak();
     }
   }, [user, profileUserId]);
 
@@ -56,6 +64,22 @@ export default function Profile() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStreak = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('streaks')
+        .select('current_streak, longest_streak, last_completed_date')
+        .eq('user_id', profileUserId)
+        .single();
+
+      if (error) throw error;
+      
+      setStreak(data);
+    } catch (error) {
+      console.error('Error loading streak:', error);
     }
   };
 
@@ -223,6 +247,23 @@ export default function Profile() {
                     <p className="font-medium">
                       {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : 'Не указана'}
                     </p>
+                  </div>
+                </div>
+                
+                {/* Streak Information */}
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Trophy className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Лучший стрик</p>
+                    <p className="font-medium">{streak?.longest_streak || 0} {(streak?.longest_streak || 0) === 1 ? 'день' : 'дней'}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Flame className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Текущий стрик</p>
+                    <p className="font-medium">{streak?.current_streak || 0} {(streak?.current_streak || 0) === 1 ? 'день' : 'дней'}</p>
                   </div>
                 </div>
               </div>
