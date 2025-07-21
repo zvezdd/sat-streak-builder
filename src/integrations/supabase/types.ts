@@ -77,6 +77,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          last_seen: string | null
           updated_at: string
           user_id: string
           username: string
@@ -86,6 +87,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_seen?: string | null
           updated_at?: string
           user_id: string
           username: string
@@ -95,6 +97,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          last_seen?: string | null
           updated_at?: string
           user_id?: string
           username?: string
@@ -160,6 +163,30 @@ export type Database = {
           last_completed_date?: string | null
           longest_streak?: number
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      streaks_records: {
+        Row: {
+          created_at: string | null
+          date_achieved: string
+          id: string
+          streak_value: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_achieved: string
+          id?: string
+          streak_value: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date_achieved?: string
+          id?: string
+          streak_value?: number
           user_id?: string
         }
         Relationships: []

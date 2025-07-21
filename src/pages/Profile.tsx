@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Calendar, Camera, Upload } from 'lucide-react';
-import { Navigate } from 'react-router-dom';
+import { User, Mail, Calendar, Camera, ArrowLeft } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -19,6 +19,7 @@ interface Profile {
 
 export default function Profile() {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,6 +142,14 @@ export default function Profile() {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
+          <Button
+            variant="outline"
+            onClick={() => navigate(-1)}
+            className="mb-6"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Назад
+          </Button>
           <Card className="shadow-lg">
             <CardHeader className="text-center">
               <div className="relative mx-auto w-20 h-20 mb-4">

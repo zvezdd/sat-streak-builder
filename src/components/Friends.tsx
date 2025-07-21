@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Search, UserPlus, Check, X, Users } from 'lucide-react';
+import { formatLastSeen } from '@/hooks/useOnlineStatus';
 
 interface Profile {
   id: string;
@@ -31,6 +32,7 @@ interface FriendProgress {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  last_seen: string | null;
   completed_today: boolean;
   current_streak: number;
 }
@@ -203,7 +205,7 @@ export function Friends() {
       // Get friends' profiles
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('user_id, username, avatar_url')
+        .select('user_id, username, avatar_url, last_seen')
         .in('user_id', friendIds);
 
       if (profileError) throw profileError;
@@ -235,6 +237,7 @@ export function Friends() {
           user_id: profile.user_id,
           username: profile.username || 'Unknown',
           avatar_url: profile.avatar_url,
+          last_seen: profile.last_seen,
           completed_today: progress?.completed || false,
           current_streak: streak?.current_streak || 0,
         };
@@ -290,9 +293,11 @@ export function Friends() {
                       )}
                       <div>
                         <p className="font-medium">{friend.username}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {friend.current_streak} day streak
-                        </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{friend.current_streak} день стрик</span>
+                          <span>•</span>
+                          <span>{formatLastSeen(friend.last_seen)}</span>
+                        </div>
                       </div>
                     </div>
                     <Badge variant={friend.completed_today ? "default" : "secondary"}>

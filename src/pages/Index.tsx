@@ -7,6 +7,7 @@ import { Friends } from '@/components/Friends';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, LogOut, Loader2, User } from 'lucide-react';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 const Index = () => {
   const {
     user,
@@ -24,6 +25,9 @@ const Index = () => {
   });
   const [dataLoading, setDataLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<{avatar_url: string | null} | null>(null);
+
+  // Track online status
+  useOnlineStatus();
   const loadUserData = async () => {
     if (!user) return;
     setDataLoading(true);
