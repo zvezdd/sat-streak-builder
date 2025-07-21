@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Calendar, Camera, ArrowLeft } from 'lucide-react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -20,24 +20,29 @@ interface Profile {
 export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { userId } = useParams();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Determine if viewing own profile or another user's profile
+  const isOwnProfile = !userId || userId === user?.id;
+  const profileUserId = userId || user?.id;
+
   useEffect(() => {
-    if (user) {
+    if (user && profileUserId) {
       loadProfile();
     }
-  }, [user]);
+  }, [user, profileUserId]);
 
   const loadProfile = async () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', profileUserId)
         .single();
 
       if (error) throw error;
@@ -164,27 +169,33 @@ export default function Profile() {
                     <User className="w-10 h-10 text-primary" />
                   </div>
                 )}
-                <Button
-                  size="sm"
-                  className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                >
-                  {uploading ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  ) : (
-                    <Camera className="h-4 w-4" />
-                  )}
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
+                {isOwnProfile && (
+                  <Button
+                    size="sm"
+                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : (
+                      <Camera className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                {isOwnProfile && (
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                )}
               </div>
-              <CardTitle className="text-2xl">Мой профиль</CardTitle>
+              <CardTitle className="text-2xl">
+                {isOwnProfile ? 'Мой профиль' : `Профиль ${profile?.username}`}
+              </CardTitle>
             </CardHeader>
             
             <CardContent className="space-y-6">
@@ -216,15 +227,17 @@ export default function Profile() {
                 </div>
               </div>
               
-              <div className="pt-4 border-t">
-                <Button
-                  onClick={signOut}
-                  variant="destructive"
-                  className="w-full"
-                >
-                  Выйти из аккаунта
-                </Button>
-              </div>
+              {isOwnProfile && (
+                <div className="pt-4 border-t">
+                  <Button
+                    onClick={signOut}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    Выйти из аккаунта
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

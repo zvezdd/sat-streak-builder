@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Search, UserPlus, Check, X, Users } from 'lucide-react';
 import { formatLastSeen } from '@/hooks/useOnlineStatus';
+import { useNavigate } from 'react-router-dom';
 
 interface Profile {
   id: string;
@@ -45,6 +46,7 @@ export function Friends() {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -289,8 +291,11 @@ export function Friends() {
             ) : (
               <div className="space-y-3">
                 {friends.map(friend => (
-                  <div key={friend.user_id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
+                  <div key={friend.user_id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer flex-1"
+                      onClick={() => navigate(`/profile/${friend.user_id}`)}
+                    >
                       {friend.avatar_url ? (
                         <img
                           src={friend.avatar_url}
@@ -305,7 +310,7 @@ export function Friends() {
                       <div>
                         <p className="font-medium">{friend.username}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{friend.current_streak} день стрик</span>
+                          <span>{friend.current_streak} {friend.current_streak === 1 ? 'день' : 'дней'} стрик</span>
                           <span>•</span>
                           <span>{formatLastSeen(friend.last_seen)}</span>
                         </div>
