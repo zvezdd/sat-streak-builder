@@ -53,6 +53,17 @@ export function Friends() {
     }
   }, [user]);
 
+  // Auto-refresh friends data every 30 seconds
+  useEffect(() => {
+    if (user) {
+      const interval = setInterval(() => {
+        loadFriends();
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const searchUsers = async () => {
     if (!searchUsername.trim()) return;
     
