@@ -119,12 +119,12 @@ const Index = () => {
             <Link to="/profile">
               <Button variant="outline">
                 <User className="h-4 w-4 mr-2" />
-                Профиль
+                Profile
               </Button>
             </Link>
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Выйти
+              Sign Out
             </Button>
           </div>
         </div>
