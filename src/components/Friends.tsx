@@ -36,6 +36,7 @@ interface FriendProgress {
   last_seen: string | null;
   completed_today: boolean;
   current_streak: number;
+  longest_streak: number;
 }
 
 export function Friends() {
@@ -226,7 +227,7 @@ export function Friends() {
       // Get friends' streaks
       const { data: streaks, error: streakError } = await supabase
         .from('streaks')
-        .select('user_id, current_streak')
+        .select('user_id, current_streak, longest_streak')
         .in('user_id', friendIds);
 
       if (streakError) throw streakError;
@@ -253,6 +254,7 @@ export function Friends() {
           last_seen: profile.last_seen,
           completed_today: progress?.completed || false,
           current_streak: streak?.current_streak || 0,
+          longest_streak: streak?.longest_streak || 0,
         };
       }) || [];
 
@@ -310,7 +312,7 @@ export function Friends() {
                       <div>
                         <p className="font-medium">{friend.username}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{friend.current_streak} {friend.current_streak === 1 ? 'день' : 'дней'} стрик</span>
+                          <span>{friend.longest_streak} {friend.longest_streak === 1 ? 'день' : 'дней'} лучший стрик</span>
                           <span>•</span>
                           <span>{formatLastSeen(friend.last_seen)}</span>
                         </div>
