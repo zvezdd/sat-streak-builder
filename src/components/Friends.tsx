@@ -67,6 +67,30 @@ export function Friends() {
     }
   }, [user]);
 
+  // Real-time subscription for streaks updates
+  useEffect(() => {
+    if (user) {
+      const channel = supabase
+        .channel('streaks-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'streaks'
+          },
+          () => {
+            loadFriends(); // Reload friends data when streaks change
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
+
   const searchUsers = async () => {
     if (!searchUsername.trim()) return;
     
