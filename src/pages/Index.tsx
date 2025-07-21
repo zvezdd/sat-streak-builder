@@ -8,12 +8,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { GraduationCap, LogOut, Loader2, User } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { useLanguage } from '@/contexts/LanguageContext';
 const Index = () => {
   const {
     user,
     signOut,
     loading
   } = useAuth();
+  const { t } = useLanguage();
   const [streakData, setStreakData] = useState({
     current_streak: 0,
     longest_streak: 0
@@ -128,7 +130,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold">SATellite</h1>
-              <p className="text-sm text-muted-foreground">Welcome back!</p>
+              <p className="text-sm text-muted-foreground">{t('header.welcome')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -147,7 +149,7 @@ const Index = () => {
             </Link>
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
+              {t('header.signOut')}
             </Button>
           </div>
         </div>
@@ -157,7 +159,7 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8">
         {dataLoading ? <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading your progress...</span>
+            <span className="ml-2">{t('loading.progress')}</span>
           </div> : <div className="grid gap-6 lg:grid-cols-3">
             {/* Left Column - Progress and Friends */}
             <div className="space-y-6">

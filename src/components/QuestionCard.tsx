@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, BookOpen, Calculator } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Question {
   id: string;
@@ -30,6 +31,7 @@ export function QuestionCard({
   isCorrect 
 }: QuestionCardProps) {
   const [selected, setSelected] = useState<string>('');
+  const { t } = useLanguage();
 
   const handleSubmit = () => {
     if (selected) {
@@ -47,6 +49,10 @@ export function QuestionCard({
     }
   };
 
+  const getDifficultyText = (difficulty: string) => {
+    return t(`question.${difficulty}` as any) || difficulty;
+  };
+
   const SubjectIcon = question.subject === 'math' ? Calculator : BookOpen;
 
   return (
@@ -55,10 +61,10 @@ export function QuestionCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <SubjectIcon className="h-5 w-5" />
-            <CardTitle className="text-lg capitalize">{question.subject}</CardTitle>
+            <CardTitle className="text-lg capitalize">{t(`question.${question.subject}` as any)}</CardTitle>
           </div>
           <Badge className={getDifficultyColor(question.difficulty)}>
-            {question.difficulty}
+            {getDifficultyText(question.difficulty)}
           </Badge>
         </div>
       </CardHeader>
@@ -112,7 +118,7 @@ export function QuestionCard({
             disabled={!selected}
             className="w-full"
           >
-            Submit Answer
+            {t('challenge.submitAnswer')}
           </Button>
         )}
 
@@ -125,7 +131,7 @@ export function QuestionCard({
                 <XCircle className="h-5 w-5 text-red-600" />
               )}
               <span className="font-semibold">
-                {isCorrect ? 'Correct!' : 'Incorrect'}
+                {isCorrect ? t('challenge.correct') : t('challenge.incorrect')}
               </span>
             </div>
             <p className="text-sm text-muted-foreground">{question.explanation}</p>

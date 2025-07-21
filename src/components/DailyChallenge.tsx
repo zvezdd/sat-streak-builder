@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, RotateCcw } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Question {
   id: string;
@@ -30,6 +31,7 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
   const [challengeComplete, setChallengeComplete] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const loadQuestions = async () => {
     setLoading(true);
@@ -48,8 +50,8 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
     } catch (error) {
       console.error('Error loading questions:', error);
       toast({
-        title: "Error loading questions",
-        description: "Please try again",
+        title: t('error.loadingQuestions'),
+        description: t('error.tryAgain'),
         variant: "destructive",
       });
     } finally {
@@ -153,17 +155,17 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
       onProgressUpdate();
       
       toast({
-        title: isCompleted ? "Daily Challenge Complete!" : "Progress Saved",
+        title: isCompleted ? t('challenge.completeToast') : t('challenge.progressToast'),
         description: isCompleted 
-          ? `Great job! You got ${correctAnswers} out of ${totalQuestions} correct.`
-          : `Progress saved: ${correctAnswers}/${totalQuestions} correct`,
+          ? t('challenge.completeDesc', { correct: correctAnswers.toString(), total: totalQuestions.toString() })
+          : t('challenge.progressDesc', { correct: correctAnswers.toString(), total: totalQuestions.toString() }),
       });
 
     } catch (error) {
       console.error('Error updating progress:', error);
       toast({
-        title: "Error saving progress",
-        description: "Please try again",
+        title: t('error.savingProgress'),
+        description: t('error.tryAgain'),
         variant: "destructive",
       });
     }
@@ -182,7 +184,7 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
       <Card>
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading questions...</span>
+          <span className="ml-2">{t('loading.questions')}</span>
         </CardContent>
       </Card>
     );
@@ -192,9 +194,9 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <p>No questions available. Please try again later.</p>
+          <p>{t('challenge.noQuestions')}</p>
           <Button onClick={loadQuestions} className="mt-4">
-            Retry
+            {t('challenge.retry')}
           </Button>
         </CardContent>
       </Card>
@@ -208,17 +210,17 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-center">Challenge Complete! 🎉</CardTitle>
+          <CardTitle className="text-center">{t('challenge.complete')}</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <div className="text-6xl font-bold text-primary">{correctCount}/5</div>
-          <p className="text-lg">You got {correctCount} questions correct!</p>
-          <p className="text-muted-foreground">Accuracy: {accuracy}%</p>
+          <p className="text-lg">{t('challenge.gotCorrect', { count: correctCount.toString() })}</p>
+          <p className="text-muted-foreground">{t('challenge.accuracy', { percent: accuracy.toString() })}</p>
           
           <div className="flex justify-center space-x-4 pt-4">
             <Button onClick={resetChallenge} variant="outline">
               <RotateCcw className="h-4 w-4 mr-2" />
-              Try Again
+              {t('challenge.tryAgain')}
             </Button>
           </div>
         </CardContent>
@@ -232,9 +234,9 @@ export function DailyChallenge({ onProgressUpdate }: DailyChallengeProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Daily Challenge</h2>
+        <h2 className="text-2xl font-bold">{t('challenge.title')}</h2>
         <div className="text-sm text-muted-foreground">
-          Question {currentQuestionIndex + 1} of {questions.length}
+          {t('challenge.question')} {currentQuestionIndex + 1} {t('challenge.of')} {questions.length}
         </div>
       </div>
       
