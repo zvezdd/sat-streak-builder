@@ -6,7 +6,7 @@ import { DailyChallenge } from '@/components/DailyChallenge';
 import { Friends } from '@/components/Friends';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { GraduationCap, LogOut, Loader2 } from 'lucide-react';
+import { GraduationCap, LogOut, Loader2, User } from 'lucide-react';
 const Index = () => {
   const {
     user,
@@ -115,10 +115,18 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Welcome back!</p>
             </div>
           </div>
-          <Button variant="outline" onClick={signOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to="/profile">
+              <Button variant="outline">
+                <User className="h-4 w-4 mr-2" />
+                Профиль
+              </Button>
+            </Link>
+            <Button variant="outline" onClick={signOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Выйти
+            </Button>
+          </div>
         </div>
       </header>
 
