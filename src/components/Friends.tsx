@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Search, UserPlus, Check, X, Users } from 'lucide-react';
-import { formatLastSeen } from '@/hooks/useOnlineStatus';
+import { formatLastSeen, isOnline } from '@/hooks/useOnlineStatus';
 import { useNavigate } from 'react-router-dom';
 
 interface Profile {
@@ -56,21 +56,36 @@ export function Friends() {
     }
   }, [user]);
 
-  // Auto-refresh friends data every 30 seconds
+  // Auto-refresh friends data every 60 seconds for more accurate online status
   useEffect(() => {
     if (user) {
       const interval = setInterval(() => {
         loadFriends();
-      }, 30000);
+      }, 60000); // Увеличил до 60 секунд чтобы избежать слишком частых запросов
       
       return () => clearInterval(interval);
     }
   }, [user]);
 
-  // Real-time subscription for streaks updates
+  // Real-time subscription for profiles and streaks updates
   useEffect(() => {
     if (user) {
-      const channel = supabase
+      const profilesChannel = supabase
+        .channel('profiles-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles'
+          },
+          () => {
+            loadFriends(); // Reload when any profile updates (including last_seen)
+          }
+        )
+        .subscribe();
+
+      const streaksChannel = supabase
         .channel('streaks-changes')
         .on(
           'postgres_changes',
@@ -86,7 +101,8 @@ export function Friends() {
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(profilesChannel);
+        supabase.removeChannel(streaksChannel);
       };
     }
   }, [user]);
@@ -335,8 +351,10 @@ export function Friends() {
                       )}
                       <div>
                         <p className="font-medium">{friend.username}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{formatLastSeen(friend.last_seen)}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className={isOnline(friend.last_seen) ? "text-green-600" : "text-muted-foreground"}>
+                            {formatLastSeen(friend.last_seen)}
+                          </span>
                         </div>
                       </div>
                     </div>

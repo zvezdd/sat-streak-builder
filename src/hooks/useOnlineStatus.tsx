@@ -63,8 +63,11 @@ export const formatLastSeen = (lastSeen: string | null): string => {
   const diffHours = Math.floor(diffMinutes / 60);
   const diffDays = Math.floor(diffHours / 24);
 
+  // Более строгая проверка онлайн статуса - только если был активен в последние 2 минуты
   if (diffMinutes < 2) {
     return 'онлайн';
+  } else if (diffMinutes < 5) {
+    return 'недавно был в сети';
   } else if (diffMinutes < 60) {
     return `${diffMinutes} мин назад`;
   } else if (diffHours < 24) {
@@ -79,4 +82,16 @@ export const formatLastSeen = (lastSeen: string | null): string => {
       month: '2-digit',
     });
   }
+};
+
+export const isOnline = (lastSeen: string | null): boolean => {
+  if (!lastSeen) return false;
+  
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  
+  // Считаем онлайн только если был активен в последние 2 минуты
+  return diffMinutes < 2;
 };
