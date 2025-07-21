@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Calendar, Edit2, Save, X } from 'lucide-react';
+import { User, Mail, Calendar, Camera, Upload } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
 interface Profile {
@@ -14,6 +12,7 @@ interface Profile {
   user_id: string;
   email: string;
   username: string;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,11 +22,8 @@ export default function Profile() {
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    username: '',
-    email: ''
-  });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -46,10 +42,6 @@ export default function Profile() {
       if (error) throw error;
       
       setProfile(data);
-      setEditForm({
-        username: data.username,
-        email: data.email
-      });
     } catch (error) {
       toast({
         title: "Ошибка",
@@ -61,36 +53,75 @@ export default function Profile() {
     }
   };
 
-  const handleSave = async () => {
-    if (!profile) return;
-    
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setLoading(true);
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          username: editForm.username,
-          email: editForm.email
-        })
-        .eq('user_id', user?.id);
+      const file = event.target.files?.[0];
+      if (!file) return;
 
-      if (error) throw error;
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Ошибка",
+          description: "Файл слишком большой. Максимальный размер: 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Ошибка",
+          description: "Пожалуйста, выберите изображение",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setUploading(true);
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user!.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (profile?.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        await supabase.storage.from('avatars').remove([`${user!.id}/${oldPath}`]);
+      }
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl })
+        .eq('user_id', user!.id);
+
+      if (updateError) throw updateError;
 
       await loadProfile();
-      setEditing(false);
-      
+
       toast({
         title: "Успешно",
-        description: "Профиль обновлен",
+        description: "Фото профиля обновлено",
       });
     } catch (error) {
+      console.error('Error uploading avatar:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить профиль",
+        description: "Не удалось загрузить фото",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -112,95 +143,69 @@ export default function Profile() {
         <div className="max-w-2xl mx-auto">
           <Card className="shadow-lg">
             <CardHeader className="text-center">
-              <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                <User className="w-10 h-10 text-primary" />
+              <div className="relative mx-auto w-20 h-20 mb-4">
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover border-2 border-primary/20"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                    <User className="w-10 h-10 text-primary" />
+                  </div>
+                )}
+                <Button
+                  size="sm"
+                  className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               <CardTitle className="text-2xl">Мой профиль</CardTitle>
             </CardHeader>
             
             <CardContent className="space-y-6">
-              {editing ? (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Имя пользователя</Label>
-                    <Input
-                      id="username"
-                      value={editForm.username}
-                      onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                      placeholder="Введите имя пользователя"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      placeholder="Введите email"
-                    />
-                  </div>
-                  
-                  <div className="flex gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditing(false);
-                        setEditForm({
-                          username: profile?.username || '',
-                          email: profile?.email || ''
-                        });
-                      }}
-                      disabled={loading}
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Отмена
-                    </Button>
-                    <Button onClick={handleSave} disabled={loading}>
-                      <Save className="w-4 h-4 mr-2" />
-                      Сохранить
-                    </Button>
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <User className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Имя пользователя</p>
+                    <p className="font-medium">{profile?.username}</p>
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <User className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Имя пользователя</p>
-                      <p className="font-medium">{profile?.username}</p>
-                    </div>
+                
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Mail className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{profile?.email}</p>
                   </div>
-                  
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <Mail className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{profile?.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Дата регистрации</p>
-                      <p className="font-medium">
-                        {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : 'Не указана'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <Button
-                    onClick={() => setEditing(true)}
-                    className="w-full"
-                    variant="outline"
-                  >
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Редактировать профиль
-                  </Button>
                 </div>
-              )}
+                
+                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Дата регистрации</p>
+                    <p className="font-medium">
+                      {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('ru-RU') : 'Не указана'}
+                    </p>
+                  </div>
+                </div>
+              </div>
               
               <div className="pt-4 border-t">
                 <Button

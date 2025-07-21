@@ -14,6 +14,7 @@ interface Profile {
   user_id: string;
   username: string;
   email: string;
+  avatar_url: string | null;
 }
 
 interface FriendRequest {
@@ -29,6 +30,7 @@ interface FriendRequest {
 interface FriendProgress {
   user_id: string;
   username: string;
+  avatar_url: string | null;
   completed_today: boolean;
   current_streak: number;
 }
@@ -201,7 +203,7 @@ export function Friends() {
       // Get friends' profiles
       const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('user_id, username')
+        .select('user_id, username, avatar_url')
         .in('user_id', friendIds);
 
       if (profileError) throw profileError;
@@ -232,6 +234,7 @@ export function Friends() {
         return {
           user_id: profile.user_id,
           username: profile.username || 'Unknown',
+          avatar_url: profile.avatar_url,
           completed_today: progress?.completed || false,
           current_streak: streak?.current_streak || 0,
         };
@@ -274,9 +277,17 @@ export function Friends() {
                 {friends.map(friend => (
                   <div key={friend.user_id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        {friend.username.charAt(0).toUpperCase()}
-                      </div>
+                      {friend.avatar_url ? (
+                        <img
+                          src={friend.avatar_url}
+                          alt={`${friend.username} profile`}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          {friend.username.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium">{friend.username}</p>
                         <p className="text-sm text-muted-foreground">
@@ -311,9 +322,17 @@ export function Friends() {
                 {searchResults.map(profile => (
                   <div key={profile.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                        {(profile.username || profile.email || 'U').charAt(0).toUpperCase()}
-                      </div>
+                      {profile.avatar_url ? (
+                        <img
+                          src={profile.avatar_url}
+                          alt={`${profile.username} profile`}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          {(profile.username || profile.email || 'U').charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <div>
                         <p className="font-medium">{profile.username || 'No username'}</p>
                         <p className="text-sm text-muted-foreground">{profile.email}</p>
@@ -340,9 +359,17 @@ export function Friends() {
                   {pendingReceived.map(request => (
                     <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          {(request.sender_profile?.username || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        {request.sender_profile?.avatar_url ? (
+                          <img
+                            src={request.sender_profile.avatar_url}
+                            alt={`${request.sender_profile.username} profile`}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            {(request.sender_profile?.username || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium">{request.sender_profile?.username || 'Unknown'}</p>
                           <p className="text-sm text-muted-foreground">
@@ -378,9 +405,17 @@ export function Friends() {
                   {pendingSent.map(request => (
                     <div key={request.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                          {(request.receiver_profile?.username || 'U').charAt(0).toUpperCase()}
-                        </div>
+                        {request.receiver_profile?.avatar_url ? (
+                          <img
+                            src={request.receiver_profile.avatar_url}
+                            alt={`${request.receiver_profile.username} profile`}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                            {(request.receiver_profile?.username || 'U').charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="font-medium">{request.receiver_profile?.username || 'Unknown'}</p>
                           <p className="text-sm text-muted-foreground">

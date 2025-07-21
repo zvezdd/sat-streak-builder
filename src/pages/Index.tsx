@@ -23,6 +23,7 @@ const Index = () => {
     completed: false
   });
   const [dataLoading, setDataLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<{avatar_url: string | null} | null>(null);
   const loadUserData = async () => {
     if (!user) return;
     setDataLoading(true);
@@ -66,6 +67,17 @@ const Index = () => {
         } else {
           setStreakData(streak);
         }
+      }
+
+      // Load user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profileError && profile) {
+        setUserProfile(profile);
       }
 
       // Load today's progress
@@ -117,10 +129,17 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-2">
             <Link to="/profile">
-              <Button variant="outline">
-                <User className="h-4 w-4 mr-2" />
-                Profile
-              </Button>
+              {userProfile?.avatar_url ? (
+                <img
+                  src={userProfile.avatar_url}
+                  alt="Profile"
+                  className="w-9 h-9 rounded-full object-cover border-2 border-primary/20 hover:border-primary/40 transition-colors cursor-pointer"
+                />
+              ) : (
+                <div className="w-9 h-9 bg-primary/10 rounded-full flex items-center justify-center hover:bg-primary/20 transition-colors cursor-pointer">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+              )}
             </Link>
             <Button variant="outline" onClick={signOut}>
               <LogOut className="h-4 w-4 mr-2" />
